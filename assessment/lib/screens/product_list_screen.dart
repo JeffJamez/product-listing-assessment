@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
-import '../models/product_model.dart';
 import '../providers/product_list_provider.dart';
+import '../services/product_service.dart';
 import '../widgets/product_card.dart';
 import '../widgets/responsive_layout.dart';
 
@@ -11,7 +12,9 @@ class ProductListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => ProductListProvider()..loadProducts(),
+      create: (_) => ProductListProvider(
+        productService: GetIt.instance<ProductService>(),
+      )..loadProducts(),
       child: const _ProductListView(),
     );
   }
@@ -25,9 +28,21 @@ class _ProductListView extends StatelessWidget {
     final provider = context.watch<ProductListProvider>();
 
     final grid = switch (provider.state) {
-      ProductListState.initial || ProductListState.loading =>
+      ProductListState.initial ||
+      ProductListState.loading =>
         const _SkeletonGrid(),
-      ProductListState.refreshing => const _SkeletonGrid(),
+      ProductListState.refreshing => Stack(
+          children: [
+            ResponsiveLayout(
+              mobile: _ProductGrid(provider: provider, crossAxisCount: 1),
+              tablet: _ProductGrid(provider: provider, crossAxisCount: 2),
+              desktop: _ProductGrid(provider: provider, crossAxisCount: 3),
+            ),
+            const Positioned.fill(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          ],
+        ),
       ProductListState.error => _ErrorView(
           message: provider.errorMessage,
           onRetry: provider.loadProducts,
@@ -60,7 +75,7 @@ class _ProductListView extends StatelessWidget {
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
-              onChanged: (_) {},
+              onChanged: provider.filterProducts,
             ),
           ),
           Expanded(child: grid),

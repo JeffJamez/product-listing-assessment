@@ -11,3 +11,5 @@ build/
 context.md
 Assessment.md
 
+# FVM Version Cache
+.fvm/
